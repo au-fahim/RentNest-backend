@@ -18,6 +18,18 @@ enum Role {
   ADMIN
 }
 
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 model User {
   id       String  @id @default(uuid())
   name     String
@@ -27,7 +39,9 @@ model User {
   isBanned Boolean @default(false)
 
   // Relations
-  properties Property[] // A landlord can have multiple properties
+  properties     Property[]
+  rentalRequests RentalRequest[] @relation("TenantRequests")
+  reviews        Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -58,15 +72,76 @@ model Property {
   amenities   String[]
   isAvailable Boolean  @default(true)
 
-  // Foreign Keys & Relations
+  // Relations
   landlordId String
   landlord   User   @relation(fields: [landlordId], references: [id])
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
 
+  rentalRequests RentalRequest[]
+  reviews        Review[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("properties")
+}
+
+model RentalRequest {
+  id          String        @id @default(uuid())
+  status      RequestStatus @default(PENDING)
+  moveInDate  DateTime
+  moveOutDate DateTime
+
+  // Relations
+  tenantId String
+  tenant   User   @relation("TenantRequests", fields: [tenantId], references: [id])
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  payment Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rental_requests")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  amount        Float
+  transactionId String        @unique
+  method        String // e.g., "card"
+  provider      String // "Stripe" or "SSLCommerz"
+  status        PaymentStatus @default(PENDING)
+  paidAt        DateTime?
+
+  // Relations
+  rentalRequestId String        @unique
+  rentalRequest   RentalRequest @relation(fields: [rentalRequestId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payments")
+}
+
+model Review {
+  id      String @id @default(uuid())
+  rating  Int
+  comment String
+
+  // Relations
+  tenantId String
+  tenant   User   @relation(fields: [tenantId], references: [id])
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
 }
