@@ -2,6 +2,7 @@ import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { globalErrorHandler } from "./middlewares/globalErrorHandler.js";
 import { AuthRoutes } from "./modules/auth/auth.route.js";
+import { UserRoutes } from "./modules/user/user.route.js";
 
 const app: Application = express();
 
@@ -10,6 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/auth", AuthRoutes);
+app.use("/api/users", UserRoutes);
 
 // Root / Test Route
 app.get("/", (req: Request, res: Response) => {
