@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { createPropertyService } from "./property.service.js";
+import {
+  createPropertyService,
+  updatePropertyService,
+  deletePropertyService,
+} from "./property.service.js";
 
 export const createPropertyController = async (
   req: Request,
@@ -16,6 +20,52 @@ export const createPropertyController = async (
       success: true,
       message: "Property created successfully",
       data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePropertyController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const landlordId = req.user?.id as string;
+    const propertyId = req.params.id as string;
+
+    const result = await updatePropertyService(
+      propertyId,
+      landlordId,
+      req.body,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Property updated successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deletePropertyController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const landlordId = req.user?.id as string;
+    const propertyId = req.params.id as string;
+
+    await deletePropertyService(propertyId, landlordId);
+
+    res.status(200).json({
+      success: true,
+      message: "Property deleted successfully",
+      data: null, // Deletions typically return null data
     });
   } catch (error) {
     next(error);

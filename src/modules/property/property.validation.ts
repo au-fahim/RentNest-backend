@@ -18,3 +18,21 @@ export const createPropertyZodSchema = z.object({
       .min(1, "Please provide at least one amenity"),
   }),
 });
+
+export const updatePropertyZodSchema = z.object({
+  body: z.object({
+    title: z.string().min(5, "Title must be at least 5 characters").optional(),
+    description: z
+      .string()
+      .min(20, "Please provide a detailed description")
+      .optional(),
+    price: z.number().positive("Price must be a positive number").optional(),
+    location: z.string().optional(),
+    categoryId: z.string().optional(),
+    amenities: z
+      .array(z.string())
+      .min(1, "Please provide at least one amenity")
+      .optional(),
+    isAvailable: z.boolean().optional(),
+  }),
+});
