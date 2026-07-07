@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const registerUserZodSchema = z.object({
   body: z.object({
-    // Using the unified 'message' property instead of 'required_error'
     name: z.string({ message: "Name is strictly required" }).min(2).max(50),
     email: z
       .string({ message: "Email is required" })
