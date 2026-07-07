@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
   createPropertyController,
   deletePropertyController,
+  getAllPropertiesController,
+  getPropertyByIdController,
   updatePropertyController,
 } from "./property.controller.js";
 import { validateRequest } from "../../middlewares/validateRequest.js";
@@ -13,7 +15,7 @@ import { auth } from "../../middlewares/auth.js";
 
 const router = Router();
 
-// Endpoint: POST /api/properties (Protected: Landlord Only)
+// Endpoint: POST /api/properties (Protected Route: Landlord Only)
 router.post(
   "/",
   auth("LANDLORD"),
@@ -21,7 +23,7 @@ router.post(
   createPropertyController,
 );
 
-// Endpoint: PATCH /api/properties/:id (Protected: Landlord Only)
+// Endpoint: PATCH /api/properties/:id (Protected Route: Landlord Only)
 router.patch(
   "/:id",
   auth("LANDLORD"),
@@ -29,7 +31,17 @@ router.patch(
   updatePropertyController,
 );
 
-// Endpoint: DELETE /api/properties/:id (Protected: Landlord Only)
+// Endpoint: DELETE /api/properties/:id (Protected Route: Landlord Only)
 router.delete("/:id", auth("LANDLORD"), deletePropertyController);
+
+// ========================
+// PUBLIC ROUTES
+// ========================
+
+// Endpoint: GET /api/properties (Public Browse & Filter)
+router.get("/", getAllPropertiesController);
+
+// Endpoint: GET /api/properties/:id (Public Property Details)
+router.get("/:id", getPropertyByIdController);
 
 export const PropertyRoutes = router;

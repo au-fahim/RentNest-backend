@@ -3,6 +3,8 @@ import {
   createPropertyService,
   updatePropertyService,
   deletePropertyService,
+  getAllPropertiesService,
+  getPropertyByIdService,
 } from "./property.service.js";
 
 export const createPropertyController = async (
@@ -66,6 +68,43 @@ export const deletePropertyController = async (
       success: true,
       message: "Property deleted successfully",
       data: null, // Deletions typically return null data
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllPropertiesController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const result = await getAllPropertiesService(req.query);
+
+    res.status(200).json({
+      success: true,
+      message: "Properties retrieved successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPropertyByIdController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const propertyId = req.params.id as string;
+    const result = await getPropertyByIdService(propertyId);
+
+    res.status(200).json({
+      success: true,
+      message: "Property details retrieved successfully",
+      data: result,
     });
   } catch (error) {
     next(error);
