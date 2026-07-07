@@ -6,10 +6,10 @@ import { PrismaClient } from "../../generated/prisma/client";
 let dbUrl = process.env.DATABASE_URL || "";
 dbUrl = dbUrl.replace(/^["']|["']$/g, "").trim();
 
-console.log(
-  "🔌 Initializing Prisma with PostgreSQL Adapter for:",
-  dbUrl.substring(0, 30) + "...",
-);
+// console.log(
+//   "🔌 Initializing Prisma with PostgreSQL Adapter for:",
+//   dbUrl.substring(0, 30) + "...",
+// );
 
 // Ultimate Safety Check for standard postgres URL
 if (!dbUrl.startsWith("postgres://") && !dbUrl.startsWith("postgresql://")) {

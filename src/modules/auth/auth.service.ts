@@ -38,7 +38,7 @@ export const registerUserService = async (payload: any) => {
 };
 
 export const loginUserService = async (payload: any) => {
-  // 1. Find the user by email
+  // 1. Check if user exists
   const user = await prisma.user.findUnique({
     where: { email: payload.email },
   });
@@ -47,7 +47,7 @@ export const loginUserService = async (payload: any) => {
     throw new AppError(401, "Invalid email or password");
   }
 
-  // 2. Check if the user is banned (Admin feature requirement)
+  // 2. Check if user is banned
   if (user.isBanned) {
     throw new AppError(403, "Your account has been banned by an administrator");
   }

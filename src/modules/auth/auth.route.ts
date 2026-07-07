@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { registerUserController } from "./auth.controller.js";
+import { loginUserController, registerUserController } from "./auth.controller.js";
 import { validateRequest } from "../../middlewares/validateRequest.js";
-import { registerUserZodSchema } from "./auth.validation.js";
+import { loginUserZodSchema, registerUserZodSchema } from "./auth.validation.js";
 
 const router = Router();
 
@@ -10,6 +10,13 @@ router.post(
   "/register",
   validateRequest(registerUserZodSchema),
   registerUserController,
+);
+
+// Endpoint: POST /api/auth/login
+router.post(
+  "/login",
+  validateRequest(loginUserZodSchema),
+  loginUserController,
 );
 
 export const AuthRoutes = router;
