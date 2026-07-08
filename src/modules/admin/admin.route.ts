@@ -1,5 +1,7 @@
 import { Router } from "express";
 import {
+  getAllPropertiesAdminController,
+  getAllRentalsAdminController,
   getAllUsersController,
   updateUserStatusController,
 } from "./admin.controller.js";
@@ -19,5 +21,11 @@ router.patch(
   validateRequest(updateUserStatusZodSchema),
   updateUserStatusController,
 );
+
+// Endpoint: GET /api/admin/properties (Protected: Admin Only) - Get all properties
+router.get("/properties", auth("ADMIN"), getAllPropertiesAdminController);
+
+// Endpoint: GET /api/admin/rentals (Protected: Admin Only) - Get all rental requests
+router.get("/rentals", auth("ADMIN"), getAllRentalsAdminController);
 
 export const AdminRoutes = router;

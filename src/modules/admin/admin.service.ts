@@ -53,3 +53,18 @@ export const updateUserStatusService = async (
 
   return updatedUser;
 };
+
+export const getAllPropertiesAdminService = async () => {
+  return await prisma.property.findMany({
+    include: { landlord: { select: { name: true, email: true } } },
+  });
+};
+
+export const getAllRentalsAdminService = async () => {
+  return await prisma.rentalRequest.findMany({
+    include: {
+      property: { select: { title: true } },
+      tenant: { select: { name: true, email: true } },
+    },
+  });
+};

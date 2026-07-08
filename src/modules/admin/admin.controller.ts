@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import {
+  getAllPropertiesAdminService,
+  getAllRentalsAdminService,
   getAllUsersService,
   updateUserStatusService,
 } from "./admin.service.js";
@@ -38,6 +40,44 @@ export const updateUserStatusController = async (
       message: `User successfully ${isBanned ? "banned" : "unbanned"}`,
       data: result,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllPropertiesAdminController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const result = await getAllPropertiesAdminService();
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Properties retrieved successfully",
+        data: result,
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllRentalsAdminController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const result = await getAllRentalsAdminService();
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Rentals retrieved successfully",
+        data: result,
+      });
   } catch (error) {
     next(error);
   }
