@@ -1,10 +1,12 @@
 import { Router } from "express";
 import {
   createCategoryController,
+  deleteCategoryController,
   getAllCategoriesController,
+  updateCategoryController,
 } from "./category.controller.js";
 import { validateRequest } from "../../middlewares/validateRequest.js";
-import { createCategoryZodSchema } from "./category.validation.js";
+import { createCategoryZodSchema, updateCategoryZodSchema } from "./category.validation.js";
 import { auth } from "../../middlewares/auth.js";
 
 const router = Router();
@@ -19,5 +21,16 @@ router.post(
   validateRequest(createCategoryZodSchema),
   createCategoryController,
 );
+
+// Endpoint: PATCH /api/categories/:id (Protected: Admin Only)
+router.patch(
+  "/:id",
+  auth("ADMIN"),
+  validateRequest(updateCategoryZodSchema),
+  updateCategoryController,
+);
+
+// Endpoint: DELETE /api/categories/:id (Protected: Admin Only)
+router.delete("/:id", auth("ADMIN"), deleteCategoryController);
 
 export const CategoryRoutes = router;
