@@ -98,13 +98,26 @@ export const confirmPaymentService = async (
   );
 
   // 3. Update our database to mark it as Paid
-  const updatedPayment = await prisma.payment.update({
+const updatedPayment = await prisma.$transaction(async (tx) => {
+  // Mark payment as completed
+  const paymentRecord = await tx.payment.update({
     where: { id: payload.paymentId },
     data: {
       status: "COMPLETED",
       paidAt: new Date(),
     },
   });
+
+  // Mark the property as unavailable!
+  await tx.property.update({
+    where: { id: payment.rentalRequest.propertyId },
+    data: { isAvailable: false },
+  });
+
+  return paymentRecord;
+});
+
+  
 
   return updatedPayment;
 };
