@@ -58,3 +58,61 @@ export const getTenantRentalRequestsService = async (tenantId: string) => {
 
   return rentalRequests;
 };
+
+export const getLandlordRequestsService = async (landlordId: string) => {
+  // Find all requests where the associated property belongs to this landlord
+  const requests = await prisma.rentalRequest.findMany({
+    where: {
+      property: {
+        landlordId: landlordId,
+      },
+    },
+    include: {
+      property: { select: { title: true, location: true, price: true } },
+      tenant: { select: { name: true, email: true } }, // Let the landlord see who is applying
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return requests;
+};
+
+export const updateRentalRequestStatusService = async (
+  requestId: string,
+  landlordId: string,
+  status: "APPROVED" | "REJECTED",
+) => {
+  // 1. Find the request and include the property to check ownership
+  const request = await prisma.rentalRequest.findUnique({
+    where: { id: requestId },
+    include: { property: true },
+  });
+
+  if (!request) {
+    throw new AppError(404, "Rental request not found");
+  }
+
+  // 2. Security Check: Does this landlord own this property?
+  if (request.property.landlordId !== landlordId) {
+    throw new AppError(
+      403,
+      "You can only manage requests for your own properties",
+    );
+  }
+
+  // 3. Prevent updating requests that are already processed (optional but good practice)
+  if (request.status !== "PENDING") {
+    throw new AppError(
+      400,
+      `This request has already been ${request.status.toLowerCase()}`,
+    );
+  }
+
+  // 4. Update the status
+  const updatedRequest = await prisma.rentalRequest.update({
+    where: { id: requestId },
+    data: { status },
+  });
+
+  return updatedRequest;
+};

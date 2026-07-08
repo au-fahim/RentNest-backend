@@ -9,3 +9,11 @@ export const createRentalRequestZodSchema = z.object({
     }),
   }),
 });
+
+export const updateRentalRequestStatusZodSchema = z.object({
+  body: z.object({
+    status: z.enum(["APPROVED", "REJECTED"], {
+      message: "Status must be either APPROVED or REJECTED",
+    }),
+  }),
+});
