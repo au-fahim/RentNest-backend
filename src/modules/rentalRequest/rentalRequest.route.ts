@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { createRentalRequestController } from "./rentalRequest.controller.js";
+import {
+  createRentalRequestController,
+  getTenantRentalRequestsController,
+} from "./rentalRequest.controller.js";
 import { validateRequest } from "../../middlewares/validateRequest.js";
 import { createRentalRequestZodSchema } from "./rentalRequest.validation.js";
 import { auth } from "../../middlewares/auth.js";
@@ -13,5 +16,8 @@ router.post(
   validateRequest(createRentalRequestZodSchema),
   createRentalRequestController,
 );
+
+// Endpoint: GET /api/requests (Protected Route: Tenant Only)
+router.get("/", auth("TENANT"), getTenantRentalRequestsController);
 
 export const RentalRequestRoutes = router;
