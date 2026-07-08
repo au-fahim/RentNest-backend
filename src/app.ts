@@ -6,6 +6,7 @@ import { UserRoutes } from "./modules/user/user.route.js";
 import { CategoryRoutes } from "./modules/category/category.route.js";
 import { PropertyRoutes } from "./modules/property/property.route.js";
 import { RentalRequestRoutes } from "./modules/rentalRequest/rentalRequest.route.js";
+import { PaymentRoutes } from "./modules/payment/payment.route.js";
 
 const app: Application = express();
 
@@ -18,6 +19,8 @@ app.use("/api/users", UserRoutes);
 app.use("/api/categories", CategoryRoutes);
 app.use("/api/properties", PropertyRoutes);
 app.use("/api/requests", RentalRequestRoutes);
+
+app.use("/api/payments", PaymentRoutes);
 
 // Root / Test Route
 app.get("/", (req: Request, res: Response) => {
