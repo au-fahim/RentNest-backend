@@ -97,10 +97,6 @@ export const confirmPaymentService = async (
     payload.stripePaymentIntentId,
   );
 
-  // Note: For testing purposes in Postman without a frontend, you might manually advance
-  // the paymentIntent status in the Stripe dashboard, or we can simply trust the ID match for this assignment.
-  // In a real app, paymentIntent.status should be 'succeeded'.
-
   // 3. Update our database to mark it as Paid
   const updatedPayment = await prisma.payment.update({
     where: { id: payload.paymentId },
@@ -111,4 +107,59 @@ export const confirmPaymentService = async (
   });
 
   return updatedPayment;
+};
+
+export const getTenantPaymentHistoryService = async (tenantId: string) => {
+  const payments = await prisma.payment.findMany({
+    where: {
+      // Look for payments where the associated rental request belongs to this tenant
+      rentalRequest: {
+        tenantId: tenantId,
+      },
+    },
+    include: {
+      rentalRequest: {
+        include: {
+          property: {
+            select: { title: true, location: true },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return payments;
+};
+
+export const getPaymentDetailsService = async (
+  tenantId: string,
+  paymentId: string,
+) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: {
+      rentalRequest: {
+        include: {
+          property: {
+            select: { title: true, location: true, price: true },
+          },
+          landlord: {
+            select: { name: true, email: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!payment) {
+    throw new AppError(404, "Payment record not found");
+  }
+
+  // Security Check: Ensure this tenant actually owns this payment record
+  if (payment.rentalRequest.tenantId !== tenantId) {
+    throw new AppError(403, "You can only view your own payment details");
+  }
+
+  return payment;
 };

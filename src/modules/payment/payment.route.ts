@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
   confirmPaymentController,
   createPaymentIntentController,
+  getPaymentDetailsController,
+  getTenantPaymentHistoryController,
 } from "./payment.controller.js";
 import { validateRequest } from "../../middlewares/validateRequest.js";
 import {
@@ -20,12 +22,18 @@ router.post(
   createPaymentIntentController,
 );
 
-// Endpoint (Confirm Payment): POST /api/payments/confirm (Protected: Tenant Only)
+// Endpoint: POST /api/payments/confirm (Protected: Tenant Only) - Confirm Payment
 router.post(
   "/confirm",
   auth("TENANT"),
   validateRequest(confirmPaymentZodSchema),
   confirmPaymentController,
 );
+
+// Endpoint: GET /api/payments (Protected: Tenant Only) - Get payment history
+router.get("/", auth("TENANT"), getTenantPaymentHistoryController);
+
+// Endpoint: GET /api/payments/:id (Protected: Tenant Only) - Get specific payment details
+router.get("/:id", auth("TENANT"), getPaymentDetailsController);
 
 export const PaymentRoutes = router;
