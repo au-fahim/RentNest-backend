@@ -21,3 +21,29 @@ export const getUserProfileService = async (userId: string) => {
 
   return user;
 };
+
+export const updateProfileService = async (userId: string, payload: any) => {
+  // 1. Check if user already exists
+  if (payload.email) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: payload.email },
+    });
+
+    if (existingUser && existingUser.id !== userId) {
+      throw new AppError(400, "User with this email already exists");
+    }
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: payload,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      updatedAt: true,
+    },
+  });
+  return updatedUser;
+};
