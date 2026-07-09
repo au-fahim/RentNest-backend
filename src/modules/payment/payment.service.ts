@@ -2,14 +2,18 @@ import Stripe from "stripe";
 import { prisma } from "../../config/prisma.js";
 import { AppError } from "../../errors/AppError.js";
 
-// Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+if (!stripeSecretKey) {
+  throw new Error("Missing STRIPE_SECRET_KEY in environment variables");
+}
+
+const stripe = new Stripe(stripeSecretKey);
 
 export const createPaymentIntentService = async (
   tenantId: string,
   rentalRequestId: string,
 ) => {
-  // 1. Verify the rental request
   const rentalRequest = await prisma.rentalRequest.findUnique({
     where: { id: rentalRequestId },
     include: { property: true, payment: true },
@@ -19,7 +23,6 @@ export const createPaymentIntentService = async (
     throw new AppError(404, "Rental request not found");
   }
 
-  // 2. Security Checks
   if (rentalRequest.tenantId !== tenantId) {
     throw new AppError(403, "You can only pay for your own rental requests");
   }
@@ -31,6 +34,10 @@ export const createPaymentIntentService = async (
     );
   }
 
+  if (!rentalRequest.property.isAvailable) {
+    throw new AppError(400, "This property is no longer available for rent");
+  }
+
   if (rentalRequest.payment) {
     throw new AppError(
       400,
@@ -38,19 +45,23 @@ export const createPaymentIntentService = async (
     );
   }
 
-  // 3. Create Stripe Payment Intent
   const amountToPay = rentalRequest.property.price;
+  const amountInCents = Math.round(amountToPay * 100);
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(amountToPay * 100), // Stripe strictly processes amounts in cents
+    amount: amountInCents,
     currency: "usd",
+    automatic_payment_methods: {
+      enabled: true,
+      allow_redirects: "never",
+    },
     metadata: {
       rentalRequestId: rentalRequest.id,
-      tenantId: tenantId,
+      tenantId,
+      paymentFor: "RentNest rental request",
     },
   });
 
-  // 4. Create Pending Payment Record in database
   const paymentRecord = await prisma.payment.create({
     data: {
       amount: amountToPay,
@@ -62,11 +73,13 @@ export const createPaymentIntentService = async (
     },
   });
 
-  // Return client_secret so frontend can complete transaction later
   return {
     paymentId: paymentRecord.id,
     transactionId: paymentIntent.id,
     clientSecret: paymentIntent.client_secret,
+    amount: paymentRecord.amount,
+    provider: paymentRecord.provider,
+    status: paymentRecord.status,
   };
 };
 
@@ -74,10 +87,15 @@ export const confirmPaymentService = async (
   tenantId: string,
   payload: { paymentId: string; stripePaymentIntentId: string },
 ) => {
-  // 1. Find the pending payment in our database
   const payment = await prisma.payment.findUnique({
     where: { id: payload.paymentId },
-    include: { rentalRequest: true },
+    include: {
+      rentalRequest: {
+        include: {
+          property: true,
+        },
+      },
+    },
   });
 
   if (!payment) {
@@ -92,57 +110,92 @@ export const confirmPaymentService = async (
     throw new AppError(400, "This payment has already been completed");
   }
 
-  // 2. Verify the status directly with Stripe
+  if (payment.transactionId !== payload.stripePaymentIntentId) {
+    throw new AppError(
+      400,
+      "Stripe payment intent ID does not match this payment record",
+    );
+  }
+
   const paymentIntent = await stripe.paymentIntents.retrieve(
     payload.stripePaymentIntentId,
   );
 
-  // 3. Update our database to mark it as Paid
-const updatedPayment = await prisma.$transaction(async (tx) => {
-  // Mark payment as completed
-  const paymentRecord = await tx.payment.update({
-    where: { id: payload.paymentId },
-    data: {
-      status: "COMPLETED",
-      paidAt: new Date(),
-    },
+  if (paymentIntent.status !== "succeeded") {
+    throw new AppError(
+      400,
+      `Stripe payment is not completed yet. Current status: ${paymentIntent.status}`,
+    );
+  }
+
+  if (paymentIntent.currency !== "usd") {
+    throw new AppError(400, "Stripe payment currency does not match");
+  }
+
+  const expectedAmount = Math.round(payment.amount * 100);
+  if (paymentIntent.amount_received !== expectedAmount) {
+    throw new AppError(400, "Stripe paid amount does not match rental amount");
+  }
+
+  if (paymentIntent.metadata?.rentalRequestId !== payment.rentalRequestId) {
+    throw new AppError(400, "Stripe metadata does not match rental request");
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    const paymentRecord = await tx.payment.update({
+      where: { id: payload.paymentId },
+      data: {
+        status: "COMPLETED",
+        paidAt: new Date(),
+      },
+      include: {
+        rentalRequest: {
+          include: {
+            property: {
+              select: {
+                id: true,
+                title: true,
+                location: true,
+                price: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await tx.rentalRequest.update({
+      where: { id: payment.rentalRequestId },
+      data: { status: "ACTIVE" },
+    });
+
+    await tx.property.update({
+      where: { id: payment.rentalRequest.propertyId },
+      data: { isAvailable: false },
+    });
+
+    return paymentRecord;
   });
-
-  // Mark the property as unavailable!
-  await tx.property.update({
-    where: { id: payment.rentalRequest.propertyId },
-    data: { isAvailable: false },
-  });
-
-  return paymentRecord;
-});
-
-  
-
-  return updatedPayment;
 };
 
 export const getTenantPaymentHistoryService = async (tenantId: string) => {
-  const payments = await prisma.payment.findMany({
+  return await prisma.payment.findMany({
     where: {
-      // Look for payments where the associated rental request belongs to this tenant
       rentalRequest: {
-        tenantId: tenantId,
+        tenantId,
       },
     },
     include: {
       rentalRequest: {
         include: {
           property: {
-            select: { title: true, location: true },
+            select: { id: true, title: true, location: true, price: true },
           },
         },
       },
     },
     orderBy: { createdAt: "desc" },
   });
-
-  return payments;
 };
 
 export const getPaymentDetailsService = async (
@@ -155,10 +208,14 @@ export const getPaymentDetailsService = async (
       rentalRequest: {
         include: {
           property: {
-            select: { title: true, location: true, price: true },
-          },
-          landlord: {
-            select: { name: true, email: true },
+            include: {
+              landlord: {
+                select: { id: true, name: true, email: true },
+              },
+              category: {
+                select: { id: true, name: true },
+              },
+            },
           },
         },
       },
@@ -169,7 +226,6 @@ export const getPaymentDetailsService = async (
     throw new AppError(404, "Payment record not found");
   }
 
-  // Security Check: Ensure this tenant actually owns this payment record
   if (payment.rentalRequest.tenantId !== tenantId) {
     throw new AppError(403, "You can only view your own payment details");
   }

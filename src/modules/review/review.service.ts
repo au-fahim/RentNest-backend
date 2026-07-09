@@ -4,7 +4,6 @@ import { AppError } from "../../errors/AppError.js";
 export const createReviewService = async (tenantId: string, payload: any) => {
   const { propertyId, rating, comment } = payload;
 
-  // 1. Verify the property exists
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
   });
@@ -13,27 +12,28 @@ export const createReviewService = async (tenantId: string, payload: any) => {
     throw new AppError(404, "Property not found");
   }
 
-  // check if there is at least one APPROVED rental request for this tenant & property
-  const hasRented = await prisma.rentalRequest.findFirst({
+  const completedRental = await prisma.rentalRequest.findFirst({
     where: {
-      tenantId: tenantId,
-      propertyId: propertyId,
-      status: "APPROVED",
+      tenantId,
+      propertyId,
+      status: "COMPLETED",
+      payment: {
+        status: "COMPLETED",
+      },
     },
   });
 
-  if (!hasRented) {
+  if (!completedRental) {
     throw new AppError(
       403,
-      "You can only leave a review for properties you have successfully rented",
+      "You can only leave a review after a completed and paid rental",
     );
   }
 
-  // 3. Prevent duplicate reviews (one review per property per tenant)
   const existingReview = await prisma.review.findFirst({
     where: {
-      tenantId: tenantId,
-      propertyId: propertyId,
+      tenantId,
+      propertyId,
     },
   });
 
@@ -41,8 +41,7 @@ export const createReviewService = async (tenantId: string, payload: any) => {
     throw new AppError(400, "You have already reviewed this property");
   }
 
-  // 4. Create the review
-  const newReview = await prisma.review.create({
+  return await prisma.review.create({
     data: {
       tenantId,
       propertyId,
@@ -51,10 +50,11 @@ export const createReviewService = async (tenantId: string, payload: any) => {
     },
     include: {
       tenant: {
-        select: { name: true },
+        select: { id: true, name: true },
+      },
+      property: {
+        select: { id: true, title: true },
       },
     },
   });
-
-  return newReview;
 };

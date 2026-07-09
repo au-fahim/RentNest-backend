@@ -9,8 +9,8 @@ export const registerUserZodSchema = z.object({
     password: z
       .string({ message: "Password is required" })
       .min(6, "Password must be at least 6 characters long"),
-    role: z.enum(["TENANT", "LANDLORD", "ADMIN"], {
-      message: "Role must be either TENANT, LANDLORD, or ADMIN",
+    role: z.enum(["TENANT", "LANDLORD"], {
+      message: "Role must be either TENANT or LANDLORD",
     }),
   }),
 });

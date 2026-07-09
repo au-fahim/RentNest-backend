@@ -5,7 +5,6 @@ export const createRentalRequestService = async (
   tenantId: string,
   payload: any,
 ) => {
-  // 1. Check if the property exists and is actually available
   const property = await prisma.property.findUnique({
     where: { id: payload.propertyId },
   });
@@ -21,27 +20,42 @@ export const createRentalRequestService = async (
     );
   }
 
-  // 2. Create the rental request (status defaults to PENDING in our schema)
-  const rentalRequest = await prisma.rentalRequest.create({
+  if (property.landlordId === tenantId) {
+    throw new AppError(400, "You cannot request to rent your own property");
+  }
+
+  const existingOpenRequest = await prisma.rentalRequest.findFirst({
+    where: {
+      tenantId,
+      propertyId: payload.propertyId,
+      status: { in: ["PENDING", "APPROVED", "ACTIVE"] },
+    },
+  });
+
+  if (existingOpenRequest) {
+    throw new AppError(
+      400,
+      "You already have an open rental request for this property",
+    );
+  }
+
+  return await prisma.rentalRequest.create({
     data: {
       tenantId,
       propertyId: payload.propertyId,
       moveInDate: payload.moveInDate,
       moveOutDate: payload.moveOutDate,
     },
-    // Include some property details in the response so the tenant sees what they requested
     include: {
       property: {
-        select: { title: true, location: true, price: true },
+        select: { id: true, title: true, location: true, price: true },
       },
     },
   });
-
-  return rentalRequest;
 };
 
 export const getTenantRentalRequestsService = async (tenantId: string) => {
-  const rentalRequests = await prisma.rentalRequest.findMany({
+  return await prisma.rentalRequest.findMany({
     where: { tenantId },
     include: {
       property: {
@@ -50,49 +64,90 @@ export const getTenantRentalRequestsService = async (tenantId: string) => {
           title: true,
           location: true,
           price: true,
+          isAvailable: true,
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          amount: true,
+          provider: true,
+          status: true,
+          paidAt: true,
         },
       },
     },
     orderBy: { createdAt: "desc" },
   });
+};
 
-  return rentalRequests;
+export const getTenantRentalRequestByIdService = async (
+  tenantId: string,
+  requestId: string,
+) => {
+  const rentalRequest = await prisma.rentalRequest.findUnique({
+    where: { id: requestId },
+    include: {
+      property: {
+        include: {
+          category: { select: { id: true, name: true } },
+          landlord: { select: { id: true, name: true, email: true } },
+        },
+      },
+      payment: true,
+    },
+  });
+
+  if (!rentalRequest) {
+    throw new AppError(404, "Rental request not found");
+  }
+
+  if (rentalRequest.tenantId !== tenantId) {
+    throw new AppError(403, "You can only view your own rental requests");
+  }
+
+  return rentalRequest;
 };
 
 export const getLandlordRequestsService = async (landlordId: string) => {
-  // Find all requests where the associated property belongs to this landlord
-  const requests = await prisma.rentalRequest.findMany({
+  return await prisma.rentalRequest.findMany({
     where: {
       property: {
-        landlordId: landlordId,
+        landlordId,
       },
     },
     include: {
-      property: { select: { title: true, location: true, price: true } },
-      tenant: { select: { name: true, email: true } }, // Let the landlord see who is applying
+      property: {
+        select: { id: true, title: true, location: true, price: true },
+      },
+      tenant: { select: { id: true, name: true, email: true } },
+      payment: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          paidAt: true,
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
-
-  return requests;
 };
 
 export const updateRentalRequestStatusService = async (
   requestId: string,
   landlordId: string,
-  status: "APPROVED" | "REJECTED",
+  status: "APPROVED" | "REJECTED" | "COMPLETED",
 ) => {
-  // 1. Find the request and include the property to check ownership
   const request = await prisma.rentalRequest.findUnique({
     where: { id: requestId },
-    include: { property: true },
+    include: { property: true, payment: true },
   });
 
   if (!request) {
     throw new AppError(404, "Rental request not found");
   }
 
-  // 2. Security Check: Does this landlord own this property?
   if (request.property.landlordId !== landlordId) {
     throw new AppError(
       403,
@@ -100,7 +155,29 @@ export const updateRentalRequestStatusService = async (
     );
   }
 
-  // 3. Prevent updating requests that are already processed (optional but good practice)
+  if (status === "COMPLETED") {
+    if (request.status !== "ACTIVE") {
+      throw new AppError(400, "Only active rentals can be marked as completed");
+    }
+
+    if (request.payment?.status !== "COMPLETED") {
+      throw new AppError(
+        400,
+        "Rental cannot be completed before payment is completed",
+      );
+    }
+
+    return await prisma.rentalRequest.update({
+      where: { id: requestId },
+      data: { status: "COMPLETED" },
+      include: {
+        property: { select: { id: true, title: true, location: true } },
+        tenant: { select: { id: true, name: true, email: true } },
+        payment: true,
+      },
+    });
+  }
+
   if (request.status !== "PENDING") {
     throw new AppError(
       400,
@@ -108,11 +185,12 @@ export const updateRentalRequestStatusService = async (
     );
   }
 
-  // 4. Update the status
-  const updatedRequest = await prisma.rentalRequest.update({
+  return await prisma.rentalRequest.update({
     where: { id: requestId },
     data: { status },
+    include: {
+      property: { select: { id: true, title: true, location: true } },
+      tenant: { select: { id: true, name: true, email: true } },
+    },
   });
-
-  return updatedRequest;
 };

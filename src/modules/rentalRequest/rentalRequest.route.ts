@@ -2,12 +2,14 @@ import { Router } from "express";
 import {
   createRentalRequestController,
   getLandlordRequestsController,
+  getTenantRentalRequestByIdController,
   getTenantRentalRequestsController,
   updateRentalRequestStatusController,
 } from "./rentalRequest.controller.js";
 import { validateRequest } from "../../middlewares/validateRequest.js";
 import {
   createRentalRequestZodSchema,
+  rentalRequestIdParamZodSchema,
   updateRentalRequestStatusZodSchema,
 } from "./rentalRequest.validation.js";
 import { auth } from "../../middlewares/auth.js";
@@ -36,6 +38,13 @@ router.get("/", auth("TENANT"), getTenantRentalRequestsController);
 // Endpoint: GET /api/requests/landlord (Protected Route: Landlord Only)
 // Get all requests made for the landlord's properties
 router.get("/landlord", auth("LANDLORD"), getLandlordRequestsController);
+
+router.get(
+  "/:id",
+  auth("TENANT"),
+  validateRequest(rentalRequestIdParamZodSchema),
+  getTenantRentalRequestByIdController,
+);
 
 // Endpoint: PATCH /api/requests/:id/status (Protected Route: Landlord Only)
 // Approve or Reject a specific request
