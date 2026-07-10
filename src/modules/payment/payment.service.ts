@@ -141,7 +141,7 @@ export const confirmPaymentService = async (
     throw new AppError(400, "Stripe metadata does not match rental request");
   }
 
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const paymentRecord = await tx.payment.update({
       where: { id: payload.paymentId },
       data: {
