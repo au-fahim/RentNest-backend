@@ -159,3 +159,19 @@ export const getPropertyByIdService = async (propertyId: string) => {
 
   return property;
 };
+
+export const getLandlordPropertiesService = async (landlordId: string) => {
+  const properties = await prisma.property.findMany({
+    where: {
+      landlordId: landlordId,
+    },
+    include: {
+      category: {
+        select: { name: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return properties;
+};

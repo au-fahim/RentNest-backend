@@ -5,6 +5,7 @@ import {
   deletePropertyService,
   getAllPropertiesService,
   getPropertyByIdService,
+  getLandlordPropertiesService,
 } from "./property.service.js";
 
 export const createPropertyController = async (
@@ -21,6 +22,27 @@ export const createPropertyController = async (
     res.status(201).json({
       success: true,
       message: "Property created successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getLandlordPropertiesController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    // req.user is populated by your auth middleware
+    const landlordId = req.user?.id as string;
+
+    const result = await getLandlordPropertiesService(landlordId);
+
+    res.status(200).json({
+      success: true,
+      message: "Your properties were retrieved successfully",
       data: result,
     });
   } catch (error) {

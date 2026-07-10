@@ -3,6 +3,7 @@ import {
   createPropertyController,
   deletePropertyController,
   getAllPropertiesController,
+  getLandlordPropertiesController,
   getPropertyByIdController,
   updatePropertyController,
 } from "./property.controller.js";
@@ -14,6 +15,13 @@ import {
 import { auth } from "../../middlewares/auth.js";
 
 const router = Router();
+
+// Endpoint: GET /api/properties/my-properties (Protected: Landlord Only)
+router.get(
+  "/my-properties", 
+  auth("LANDLORD"), 
+  getLandlordPropertiesController
+);
 
 // Endpoint: POST /api/properties (Protected Route: Landlord Only)
 router.post(
