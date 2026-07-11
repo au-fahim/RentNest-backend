@@ -83,9 +83,18 @@ export const createPaymentIntentService = async (
   };
 };
 
-export const confirmPaymentService = async (
+type ConfirmPaymentPayload = {
+  paymentId: string;
+  stripePaymentIntentId: string;
+};
+
+type DemoCardPaymentPayload = ConfirmPaymentPayload & {
+  paymentMethodId?: string;
+};
+
+const getPaymentForConfirmation = async (
   tenantId: string,
-  payload: { paymentId: string; stripePaymentIntentId: string },
+  payload: ConfirmPaymentPayload,
 ) => {
   const payment = await prisma.payment.findUnique({
     where: { id: payload.paymentId },
@@ -117,10 +126,17 @@ export const confirmPaymentService = async (
     );
   }
 
-  const paymentIntent = await stripe.paymentIntents.retrieve(
-    payload.stripePaymentIntentId,
-  );
+  return payment;
+};
 
+type PaymentForConfirmation = Awaited<
+  ReturnType<typeof getPaymentForConfirmation>
+>;
+
+const completePaymentAfterStripeSuccess = async (
+  payment: PaymentForConfirmation,
+  paymentIntent: Stripe.PaymentIntent,
+) => {
   if (paymentIntent.status !== "succeeded") {
     throw new AppError(
       400,
@@ -141,9 +157,9 @@ export const confirmPaymentService = async (
     throw new AppError(400, "Stripe metadata does not match rental request");
   }
 
-  return await prisma.$transaction(async (tx: any) => {
+  return await prisma.$transaction(async (tx) => {
     const paymentRecord = await tx.payment.update({
-      where: { id: payload.paymentId },
+      where: { id: payment.id },
       data: {
         status: "COMPLETED",
         paidAt: new Date(),
@@ -176,6 +192,41 @@ export const confirmPaymentService = async (
 
     return paymentRecord;
   });
+};
+
+export const confirmPaymentService = async (
+  tenantId: string,
+  payload: ConfirmPaymentPayload,
+) => {
+  const payment = await getPaymentForConfirmation(tenantId, payload);
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(
+    payload.stripePaymentIntentId,
+  );
+
+  return await completePaymentAfterStripeSuccess(payment, paymentIntent);
+};
+
+export const payWithDemoCardService = async (
+  tenantId: string,
+  payload: DemoCardPaymentPayload,
+) => {
+  const payment = await getPaymentForConfirmation(tenantId, payload);
+
+  let paymentIntent = await stripe.paymentIntents.retrieve(
+    payload.stripePaymentIntentId,
+  );
+
+  if (paymentIntent.status !== "succeeded") {
+    paymentIntent = await stripe.paymentIntents.confirm(
+      payload.stripePaymentIntentId,
+      {
+        payment_method: payload.paymentMethodId ?? "pm_card_visa",
+      },
+    );
+  }
+
+  return await completePaymentAfterStripeSuccess(payment, paymentIntent);
 };
 
 export const getTenantPaymentHistoryService = async (tenantId: string) => {

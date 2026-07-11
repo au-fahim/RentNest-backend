@@ -1,21 +1,21 @@
 import { Router } from "express";
+import { auth } from "../../middlewares/auth.js";
+import { validateRequest } from "../../middlewares/validateRequest.js";
 import {
   confirmPaymentController,
   createPaymentIntentController,
   getPaymentDetailsController,
   getTenantPaymentHistoryController,
+  payWithDemoCardController,
 } from "./payment.controller.js";
-import { validateRequest } from "../../middlewares/validateRequest.js";
 import {
   confirmPaymentZodSchema,
   createPaymentIntentZodSchema,
   paymentIdParamZodSchema,
 } from "./payment.validation.js";
-import { auth } from "../../middlewares/auth.js";
 
 const router = Router();
 
-// Endpoint: POST /api/payments/create (Protected: Tenant Only)
 router.post(
   "/create",
   auth("TENANT"),
@@ -23,7 +23,6 @@ router.post(
   createPaymentIntentController,
 );
 
-// Endpoint: POST /api/payments/confirm (Protected: Tenant Only) - Confirm Payment
 router.post(
   "/confirm",
   auth("TENANT"),
@@ -31,10 +30,15 @@ router.post(
   confirmPaymentController,
 );
 
-// Endpoint: GET /api/payments (Protected: Tenant Only) - Get payment history
+router.post(
+  "/demo-card",
+  auth("TENANT"),
+  validateRequest(confirmPaymentZodSchema),
+  payWithDemoCardController,
+);
+
 router.get("/", auth("TENANT"), getTenantPaymentHistoryController);
 
-// Endpoint: GET /api/payments/:id (Protected: Tenant Only) - Get specific payment details
 router.get(
   "/:id",
   auth("TENANT"),

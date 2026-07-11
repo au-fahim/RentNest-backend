@@ -4,6 +4,7 @@ import {
   createPaymentIntentService,
   getPaymentDetailsService,
   getTenantPaymentHistoryService,
+  payWithDemoCardService,
 } from "./payment.service.js";
 
 export const createPaymentIntentController = async (
@@ -14,7 +15,6 @@ export const createPaymentIntentController = async (
   try {
     const tenantId = req.user?.id as string;
     const { rentalRequestId } = req.body;
-
     const result = await createPaymentIntentService(tenantId, rentalRequestId);
 
     res.status(201).json({
@@ -34,12 +34,30 @@ export const confirmPaymentController = async (
 ) => {
   try {
     const tenantId = req.user?.id as string;
-
     const result = await confirmPaymentService(tenantId, req.body);
 
     res.status(200).json({
       success: true,
       message: "Payment confirmed successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const payWithDemoCardController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const tenantId = req.user?.id as string;
+    const result = await payWithDemoCardService(tenantId, req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "Demo card payment completed successfully",
       data: result,
     });
   } catch (error) {
@@ -74,7 +92,6 @@ export const getPaymentDetailsController = async (
   try {
     const tenantId = req.user?.id as string;
     const paymentId = req.params.id as string;
-
     const result = await getPaymentDetailsService(tenantId, paymentId);
 
     res.status(200).json({
