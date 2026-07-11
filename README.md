@@ -265,7 +265,6 @@ This project does not use fake payments. The backend creates a real Stripe test-
 7. The backend uses `STRIPE_SECRET_KEY` from `.env` and confirms the Stripe PaymentIntent with test payment method `pm_card_visa`.
 8. The test-mode payment should appear in the Stripe dashboard, and the backend payment record should become `COMPLETED`.
 
-**Note:** Do not store or send `STRIPE_SECRET_KEY` from Postman. Use `POST /api/payments/confirm` only after a real frontend/client-side Stripe payment has already succeeded.
 
 ## Requirement Compliance Checklist
 
