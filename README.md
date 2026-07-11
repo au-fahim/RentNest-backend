@@ -19,17 +19,15 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
 1. Import [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>) into Postman.
    **or** visit my RentNest API Documentation (public) [RentNest API Postman Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS31s) and click `▶ Run in Postman` button (top right corner).
 
-2. If Postman shows a warning after import, you can keep the default collection variables. Do not add `STRIPE_SECRET_KEY` in Postman.
+2. Confirm the collection variable `baseUrl` is set to `https://rent-nest-backend-lilac.vercel.app`.
 
-3. Confirm the collection variable `baseUrl` is set to `https://rent-nest-backend-lilac.vercel.app`.
+3. Run `Login as Admin`, `Login as Tenant`, or `Login as Landlord` to automatically save the relevant token variable.
 
-4. Run `Login as Admin`, `Login as Tenant`, or `Login as Landlord` to automatically save the relevant token variable.
+4. For protected routes, keep the request authorization type as Bearer Token. The collection already uses `{{adminToken}}`, `{{tenantToken}}`, or `{{landlordToken}}`.
 
-5. For protected routes, keep the request authorization type as Bearer Token. The collection already uses `{{adminToken}}`, `{{tenantToken}}`, or `{{landlordToken}}`.
+5. **Environment Variables:** The collection automatically sets environment variables (like `baseUrl`, `tenantToken`, `propertyId`) dynamically using Test Scripts after successful requests. You do not need to manually copy-paste tokens!
 
-6. **Environment Variables:** The collection automatically sets environment variables (like `baseUrl`, `tenantToken`, `propertyId`) dynamically using Test Scripts after successful requests. You do not need to manually copy-paste tokens!
-
-7. Run the flow in this order for a complete demo:
+6. Run the flow in this order for a complete demo:
    - Admin creates a category.
    - Landlord creates a property using the category ID.
    - Tenant submits a rental request for the property.
@@ -38,8 +36,6 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
    - Run `Pay With Demo Card`; it confirms the Stripe test payment through your backend.
    - Landlord marks the active rental as completed.
    - Tenant leaves a review.
-
-**Note:** Keep `STRIPE_SECRET_KEY` only in your backend `.env` file. The Postman collection does not need the Stripe secret key; `Pay With Demo Card` calls your backend, and the backend confirms the Stripe test PaymentIntent with `pm_card_visa`.
 
 ## Standard Response Format
 
@@ -122,17 +118,16 @@ Supported property filters:
 
 Use `Authorization: Bearer <tenantToken>`.
 
-| Method | Endpoint                | Description                                           |
-| ------ | ----------------------- | ----------------------------------------------------- |
-| `POST` | `/api/requests`         | Submit a rental request.                              |
-| `GET`  | `/api/requests`         | View tenant rental request history.                   |
-| `GET`  | `/api/requests/:id`     | View one tenant rental request.                       |
-| `POST` | `/api/payments/create`  | Create Stripe payment intent after landlord approval. |
-| `POST` | `/api/payments/demo-card` | Confirm Stripe test payment through backend.       |
-| `POST` | `/api/payments/confirm` | Verify completed client-side Stripe payment.       |
-| `GET`  | `/api/payments`         | View tenant payment history.                          |
-| `GET`  | `/api/payments/:id`     | View one payment record.                              |
-| `POST` | `/api/reviews`          | Leave review after completed and paid rental.         |
+| Method | Endpoint                  | Description                                           |
+| ------ | ------------------------- | ----------------------------------------------------- |
+| `POST` | `/api/requests`           | Submit a rental request.                              |
+| `GET`  | `/api/requests`           | View tenant rental request history.                   |
+| `GET`  | `/api/requests/:id`       | View one tenant rental request.                       |
+| `POST` | `/api/payments/create`    | Create Stripe payment intent after landlord approval. |
+| `POST` | `/api/payments/demo-card` | Confirm Stripe test payment through backend.          |
+| `GET`  | `/api/payments`           | View tenant payment history.                          |
+| `GET`  | `/api/payments/:id`       | View one payment record.                              |
+| `POST` | `/api/reviews`            | Leave review after completed and paid rental.         |
 
 Create rental request:
 
@@ -274,15 +269,13 @@ This project does not use fake payments. The backend creates a real Stripe test-
 
 ## Requirement Compliance Checklist
 
-| Requirement                            | Status                                                                                                                                            |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Requirement                            | Status                                                                                                                                                                                         |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | API documentation & Postman collection | [RentNest API Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS31s) and [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>). |
-| Consistent error response              | API returns `{ success, message, errorDetails }` for validation, auth, 404, and application errors.                                               |
-| 20 meaningful commits                  | Commit history contains 20+ descriptive backend commits.                                                                                          |
-| Input validation                       | Zod validation is used on create/update/action routes and important route parameters.                                                             |
-| Admin credentials                      | Provided above.                                                                                                                                   |
-| Payment integration                    | Stripe PaymentIntent creation and backend demo-card confirmation are implemented.                                                    |
+| Consistent error response              | API returns `{ success, message, errorDetails }` for validation, auth, 404, and application errors.                                                                                            |
+| 20 meaningful commits                  | Commit history contains 20+ descriptive backend commits.                                                                                                                                       |
+| Input validation                       | Zod validation is used on create/update/action routes and important route parameters.                                                                                                          |
+| Admin credentials                      | Provided above.                                                                                                                                                                                |
+| Payment integration                    | Stripe PaymentIntent creation and backend demo-card confirmation are implemented.                                                                                                              |
 
 ---
-
-
