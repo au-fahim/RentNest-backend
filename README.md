@@ -6,8 +6,9 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
 
 | Item                | Value                                                                                            |
 | ------------------- | ------------------------------------------------------------------------------------------------ |
-| Live API Base URL   | [https://rent-nest-backend-lilac.vercel.app](https://rent-nest-backend-lilac.vercel.app)         |
+| Live API URL        | [https://rent-nest-backend-lilac.vercel.app](https://rent-nest-backend-lilac.vercel.app)         |
 | Postman Collection  | [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>) |
+| API Documentation   | [RentNest API Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS2iD) |
 | Admin Email         | `admin@rentnest.com`                                                                             |
 | Admin Password      | `admin123`                                                                                       |
 | Authentication Type | JWT Bearer Token                                                                                 |
@@ -16,11 +17,18 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
 ## Postman Usage Guide
 
 1. Import [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>) into Postman.
+   **or** visit my RentNest API Documentation (public) [RentNest API Postman Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS2iD) and click `▶ Run in Postman` button (top right corner).
+
 2. If Postman shows a "⚠️ Secrets Detected" warning after import, click `Secure All`. This is safe and only stores sensitive variables (e.g. Stripe secret key) securely inside Postman.
+
 3. Confirm the collection variable `baseUrl` is set to `https://rent-nest-backend-lilac.vercel.app`.
+
 4. Run `Login as Admin`, `Login as Tenant`, or `Login as Landlord` to automatically save the relevant token variable.
+
 5. For protected routes, keep the request authorization type as Bearer Token. The collection already uses `{{adminToken}}`, `{{tenantToken}}`, or `{{landlordToken}}`.
+
 6. **Environment Variables:** The collection automatically sets environment variables (like `baseUrl`, `tenantToken`, `propertyId`) dynamically using Test Scripts after successful requests. You do not need to manually copy-paste tokens!
+
 7. Run the flow in this order for a complete demo:
    - Admin creates a category.
    - Landlord creates a property using the category ID.
@@ -31,7 +39,7 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
    - Landlord marks the active rental as completed.
    - Tenant leaves a review.
 
-**Note:** To test this backend project properly, I have added my Stripe test secret key as a value of `stripeSecretKey` in Postman, then run the payment confirmation flow. This allowing a real Stripe test-mode transaction using a test card `pm_card_visa` to complete and record in the Stripe dashboard.
+**Note:** To test this backend project properly, I have added my Stripe test secret key as a value of `stripeSecretKey` in Postman. This allowing a real Stripe test-mode transaction using a test card `pm_card_visa` to complete and record in the Stripe dashboard.
 
 ## Standard Response Format
 
@@ -259,13 +267,13 @@ This project does not use fake payments. The backend creates a real Stripe test-
 
 ## Requirement Compliance Checklist
 
-| Requirement                          | Status                                                                                              |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| API documentation & Postman collection | Covered by this file `API_Documentation.md` and [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>).                            |
-| Consistent error response            | API returns `{ success, message, errorDetails }` for validation, auth, 404, and application errors. |
-| 20 meaningful commits                | Commit history contains 20+ descriptive backend commits.                                            |
-| Input validation                     | Zod validation is used on create/update/action routes and important route parameters.               |
-| Admin credentials                    | Provided above.                                                                                     |
-| Payment integration                  | Stripe PaymentIntent creation and confirmation are implemented.                                     |
+| Requirement                            | Status                                                                                                                                            |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API documentation & Postman collection | Covered by this file `API_Documentation.md` and [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>). |
+| Consistent error response              | API returns `{ success, message, errorDetails }` for validation, auth, 404, and application errors.                                               |
+| 20 meaningful commits                  | Commit history contains 20+ descriptive backend commits.                                                                                          |
+| Input validation                       | Zod validation is used on create/update/action routes and important route parameters.                                                             |
+| Admin credentials                      | Provided above.                                                                                                                                   |
+| Payment integration                    | Stripe PaymentIntent creation and confirmation are implemented.                                                                                   |
 
 ---
