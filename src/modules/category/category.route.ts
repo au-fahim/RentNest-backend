@@ -6,7 +6,11 @@ import {
   updateCategoryController,
 } from "./category.controller.js";
 import { validateRequest } from "../../middlewares/validateRequest.js";
-import { createCategoryZodSchema, updateCategoryZodSchema } from "./category.validation.js";
+import {
+  categoryIdParamZodSchema,
+  createCategoryZodSchema,
+  updateCategoryZodSchema,
+} from "./category.validation.js";
 import { auth } from "../../middlewares/auth.js";
 
 const router = Router();
@@ -31,6 +35,11 @@ router.patch(
 );
 
 // Endpoint: DELETE /api/categories/:id (Protected: Admin Only)
-router.delete("/:id", auth("ADMIN"), deleteCategoryController);
+router.delete(
+  "/:id",
+  auth("ADMIN"),
+  validateRequest(categoryIdParamZodSchema),
+  deleteCategoryController,
+);
 
 export const CategoryRoutes = router;

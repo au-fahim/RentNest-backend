@@ -20,6 +20,9 @@ export const createPropertyZodSchema = z.object({
 });
 
 export const updatePropertyZodSchema = z.object({
+  params: z.object({
+    id: z.uuid({ message: "Property ID must be a valid UUID" }),
+  }),
   body: z.object({
     title: z.string().min(5, "Title must be at least 5 characters").optional(),
     description: z
@@ -34,5 +37,11 @@ export const updatePropertyZodSchema = z.object({
       .min(1, "Please provide at least one amenity")
       .optional(),
     isAvailable: z.boolean().optional(),
+  }),
+});
+
+export const propertyIdParamZodSchema = z.object({
+  params: z.object({
+    id: z.uuid({ message: "Property ID must be a valid UUID" }),
   }),
 });

@@ -10,8 +10,17 @@ export const createCategoryZodSchema = z.object({
 });
 
 export const updateCategoryZodSchema = z.object({
+  params: z.object({
+    id: z.uuid({ message: "Category ID must be a valid UUID" }),
+  }),
   body: z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     description: z.string().optional(),
+  }),
+});
+
+export const categoryIdParamZodSchema = z.object({
+  params: z.object({
+    id: z.uuid({ message: "Category ID must be a valid UUID" }),
   }),
 });

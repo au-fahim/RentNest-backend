@@ -10,6 +10,7 @@ import {
 import { validateRequest } from "../../middlewares/validateRequest.js";
 import {
   createPropertyZodSchema,
+  propertyIdParamZodSchema,
   updatePropertyZodSchema,
 } from "./property.validation.js";
 import { auth } from "../../middlewares/auth.js";
@@ -40,7 +41,12 @@ router.patch(
 );
 
 // Endpoint: DELETE /api/properties/:id (Protected Route: Landlord Only)
-router.delete("/:id", auth("LANDLORD"), deletePropertyController);
+router.delete(
+  "/:id",
+  auth("LANDLORD"),
+  validateRequest(propertyIdParamZodSchema),
+  deletePropertyController,
+);
 
 // ========================
 // PUBLIC ROUTES
@@ -50,6 +56,10 @@ router.delete("/:id", auth("LANDLORD"), deletePropertyController);
 router.get("/", getAllPropertiesController);
 
 // Endpoint: GET /api/properties/:id (Public Property Details)
-router.get("/:id", getPropertyByIdController);
+router.get(
+  "/:id",
+  validateRequest(propertyIdParamZodSchema),
+  getPropertyByIdController,
+);
 
 export const PropertyRoutes = router;

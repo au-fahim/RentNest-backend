@@ -9,6 +9,7 @@ import { validateRequest } from "../../middlewares/validateRequest.js";
 import {
   confirmPaymentZodSchema,
   createPaymentIntentZodSchema,
+  paymentIdParamZodSchema,
 } from "./payment.validation.js";
 import { auth } from "../../middlewares/auth.js";
 
@@ -34,6 +35,11 @@ router.post(
 router.get("/", auth("TENANT"), getTenantPaymentHistoryController);
 
 // Endpoint: GET /api/payments/:id (Protected: Tenant Only) - Get specific payment details
-router.get("/:id", auth("TENANT"), getPaymentDetailsController);
+router.get(
+  "/:id",
+  auth("TENANT"),
+  validateRequest(paymentIdParamZodSchema),
+  getPaymentDetailsController,
+);
 
 export const PaymentRoutes = router;
