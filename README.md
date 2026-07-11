@@ -1,4 +1,4 @@
-# RentNest Backend API Documentation
+﻿# RentNest Backend API Documentation
 
 RentNest is a backend API for a rental property marketplace. Tenants can browse rental properties, submit rental requests, complete Stripe payments after approval, and leave reviews after completed rentals. Landlords can list properties, manage availability, and approve or reject tenant requests. Admins can manage users, categories, listings, and rental activity.
 
@@ -17,9 +17,9 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
 ## Postman Usage Guide
 
 1. Import [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>) into Postman.
-   **or** visit my RentNest API Documentation (public) [RentNest API Postman Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS2iD) and click `▶ Run in Postman` button (top right corner).
+   **or** visit my RentNest API Documentation (public) [RentNest API Postman Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS2iD) and click `â–¶ Run in Postman` button (top right corner).
 
-2. If Postman shows a "⚠️ Secrets Detected" warning after import, click `Secure All`. This is safe and only stores sensitive variables (e.g. Stripe secret key) securely inside Postman.
+2. If Postman shows a warning after import, you can keep the default collection variables. Do not add `STRIPE_SECRET_KEY` in Postman.
 
 3. Confirm the collection variable `baseUrl` is set to `https://rent-nest-backend-lilac.vercel.app`.
 
@@ -35,11 +35,11 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
    - Tenant submits a rental request for the property.
    - Landlord approves the rental request.
    - Tenant creates a Stripe payment intent.
-   - Confirm payment in Stripe test mode, then call the backend payment confirmation endpoint.
+   - Run `Pay With Demo Card`; it confirms the Stripe test payment through your backend.
    - Landlord marks the active rental as completed.
    - Tenant leaves a review.
 
-**Note:** To test this backend project properly, I have added my Stripe test secret key as a value of `stripeSecretKey` in Postman. This allowing a real Stripe test-mode transaction using a test card `pm_card_visa` to complete and record in the Stripe dashboard.
+**Note:** Keep `STRIPE_SECRET_KEY` only in your backend `.env` file. The Postman collection does not need the Stripe secret key; `Pay With Demo Card` calls your backend, and the backend confirms the Stripe test PaymentIntent with `pm_card_visa`.
 
 ## Standard Response Format
 
@@ -128,7 +128,8 @@ Use `Authorization: Bearer <tenantToken>`.
 | `GET`  | `/api/requests`         | View tenant rental request history.                   |
 | `GET`  | `/api/requests/:id`     | View one tenant rental request.                       |
 | `POST` | `/api/payments/create`  | Create Stripe payment intent after landlord approval. |
-| `POST` | `/api/payments/confirm` | Verify Stripe payment and mark rental active.         |
+| `POST` | `/api/payments/demo-card` | Confirm Stripe test payment through backend.       |
+| `POST` | `/api/payments/confirm` | Verify completed client-side Stripe payment.       |
 | `GET`  | `/api/payments`         | View tenant payment history.                          |
 | `GET`  | `/api/payments/:id`     | View one payment record.                              |
 | `POST` | `/api/reviews`          | Leave review after completed and paid rental.         |
@@ -151,7 +152,7 @@ Create payment intent:
 }
 ```
 
-Confirm backend payment after Stripe success:
+Pay with demo card through backend:
 
 ```json
 {
@@ -243,11 +244,10 @@ Ban or unban user:
 2. Landlord approves the request.
 3. Tenant calls `POST /api/payments/create`.
 4. Backend creates a Stripe PaymentIntent and stores a pending payment record.
-5. Complete payment in Stripe test mode using Stripe's API and a test card (`pm_card_visa`).
-6. Tenant calls `POST /api/payments/confirm`.
-7. Backend verifies the Stripe PaymentIntent, marks payment as `COMPLETED`, marks rental request as `ACTIVE`, and sets the property as unavailable.
-8. Landlord can later mark the active rental as `COMPLETED`.
-9. Tenant can leave a review only after completed and paid rental.
+5. For demo testing, tenant calls `POST /api/payments/demo-card`.
+6. Backend uses `STRIPE_SECRET_KEY` from `.env`, confirms the PaymentIntent with `pm_card_visa`, verifies the Stripe payment, marks payment as `COMPLETED`, marks rental request as `ACTIVE`, and sets the property as unavailable.
+7. Landlord can later mark the active rental as `COMPLETED`.
+8. Tenant can leave a review only after completed and paid rental.
 
 ### Completing Stripe Payment in Postman
 
@@ -256,14 +256,21 @@ This project does not use fake payments. The backend creates a real Stripe test-
 1. Login as tenant and submit a rental request.
 2. Login as landlord and approve that request.
 3. As tenant, call `POST /api/payments/create`.
-4. Copy or keep the returned `stripePaymentIntentId`; the collection saves it automatically.
-5. In Postman, I have set my Stripe test secret key as collection variable `stripeSecretKey` for testing purposes.
-6. Run `Pay With Demo Card`. It calls Stripe's PaymentIntent confirmation endpoint with `pm_card_visa`.
-   - Stripe API URL: `https://api.stripe.com/v1/payment_intents/{{stripePaymentIntentId}}/confirm`
-7. After Stripe returns a successful payment, run `Confirm Payment in Backend After Stripe Success`.
+4. The collection automatically saves `paymentId` and `stripePaymentIntentId`.
+5. Run `Pay With Demo Card`. It calls `POST /api/payments/demo-card` on your backend.
+6. The request body sends only:
+
+```json
+{
+  "paymentId": "{{paymentId}}",
+  "stripePaymentIntentId": "{{stripePaymentIntentId}}"
+}
+```
+
+7. The backend uses `STRIPE_SECRET_KEY` from `.env` and confirms the Stripe PaymentIntent with test payment method `pm_card_visa`.
 8. The test-mode payment should appear in the Stripe dashboard, and the backend payment record should become `COMPLETED`.
 
-**Note:** The Postman-side secret `STRIPE_SECRET_KEY` is only needed because this collection demonstrates the payment step without a frontend Stripe.js checkout screen.
+**Note:** Do not store or send `STRIPE_SECRET_KEY` from Postman. Use `POST /api/payments/confirm` only after a real frontend/client-side Stripe payment has already succeeded.
 
 ## Requirement Compliance Checklist
 
@@ -274,6 +281,8 @@ This project does not use fake payments. The backend creates a real Stripe test-
 | 20 meaningful commits                  | Commit history contains 20+ descriptive backend commits.                                                                                          |
 | Input validation                       | Zod validation is used on create/update/action routes and important route parameters.                                                             |
 | Admin credentials                      | Provided above.                                                                                                                                   |
-| Payment integration                    | Stripe PaymentIntent creation and confirmation are implemented.                                                                                   |
+| Payment integration                    | Stripe PaymentIntent creation and backend demo-card confirmation are implemented.                                                    |
 
 ---
+
+
