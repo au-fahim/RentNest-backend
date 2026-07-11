@@ -8,7 +8,7 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
 | ------------------- | ------------------------------------------------------------------------------------------------ |
 | Live API URL        | [https://rent-nest-backend-lilac.vercel.app](https://rent-nest-backend-lilac.vercel.app)         |
 | Postman Collection  | [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>) |
-| API Documentation   | [RentNest API Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS2iD)         |
+| API Documentation   | [RentNest API Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS31s)         |
 | Admin Email         | `admin@rentnest.com`                                                                             |
 | Admin Password      | `admin123`                                                                                       |
 | Authentication Type | JWT Bearer Token                                                                                 |
@@ -17,7 +17,7 @@ RentNest is a backend API for a rental property marketplace. Tenants can browse 
 ## Postman Usage Guide
 
 1. Import [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>) into Postman.
-   **or** visit my RentNest API Documentation (public) [RentNest API Postman Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS2iD) and click `â–¶ Run in Postman` button (top right corner).
+   **or** visit my RentNest API Documentation (public) [RentNest API Postman Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS31s) and click `▶ Run in Postman` button (top right corner).
 
 2. If Postman shows a warning after import, you can keep the default collection variables. Do not add `STRIPE_SECRET_KEY` in Postman.
 
@@ -276,7 +276,7 @@ This project does not use fake payments. The backend creates a real Stripe test-
 
 | Requirement                            | Status                                                                                                                                            |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API documentation & Postman collection | [RentNest API Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS2iD) and [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>). |
+| API documentation & Postman collection | [RentNest API Documentation](https://documenter.getpostman.com/view/54943329/2sBY4LS31s) and [RentNest Backend API.postman_collection.json](<./RentNest Backend API.postman_collection.json>). |
 | Consistent error response              | API returns `{ success, message, errorDetails }` for validation, auth, 404, and application errors.                                               |
 | 20 meaningful commits                  | Commit history contains 20+ descriptive backend commits.                                                                                          |
 | Input validation                       | Zod validation is used on create/update/action routes and important route parameters.                                                             |
