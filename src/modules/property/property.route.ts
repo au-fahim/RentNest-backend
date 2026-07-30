@@ -13,6 +13,11 @@ import {
   propertyIdParamZodSchema,
   updatePropertyZodSchema,
 } from "./property.validation.js";
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
 import { auth } from "../../middlewares/auth.js";
 
 const router = Router();
@@ -28,6 +33,7 @@ router.get(
 router.post(
   "/",
   auth("LANDLORD"),
+  upload.array("images", 6),
   validateRequest(createPropertyZodSchema),
   createPropertyController,
 );
@@ -36,6 +42,7 @@ router.post(
 router.patch(
   "/:id",
   auth("LANDLORD"),
+  upload.array("images", 6),
   validateRequest(updatePropertyZodSchema),
   updatePropertyController,
 );

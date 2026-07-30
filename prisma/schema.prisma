@@ -70,6 +70,7 @@ model Property {
   price       Float
   location    String
   amenities   String[]
+  images      String[]
   isAvailable Boolean  @default(true)
 
   landlordId String
