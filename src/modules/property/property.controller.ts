@@ -7,6 +7,7 @@ import {
   getPropertyByIdService,
   getLandlordPropertiesService,
 } from "./property.service.js";
+import { uploadImageBuffer } from "../../config/cloudinary.js";
 
 export const createPropertyController = async (
   req: Request,
@@ -17,7 +18,37 @@ export const createPropertyController = async (
     // Extract landlord ID from authenticated user token
     const landlordId = req.user?.id as string;
 
-    const result = await createPropertyService(landlordId, req.body);
+    // Handle file uploads (multer stores files in memory)
+    const files = (req.files as Express.Multer.File[]) || [];
+
+    let uploadedUrls: string[] = [];
+    if (files.length > 0) {
+      uploadedUrls = await Promise.all(
+        files.map(async (file) => uploadImageBuffer(file.buffer, file.mimetype)),
+      );
+    }
+
+    // Normalize amenities when coming from multipart/form-data
+    const payload: any = { ...req.body };
+
+    if (payload.amenities) {
+      if (typeof payload.amenities === "string") {
+        try {
+          payload.amenities = JSON.parse(payload.amenities);
+        } catch (err) {
+          payload.amenities = String(payload.amenities)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      payload.images = uploadedUrls;
+    }
+
+    const result = await createPropertyService(landlordId, payload);
 
     res.status(201).json({
       success: true,
@@ -59,11 +90,39 @@ export const updatePropertyController = async (
     const landlordId = req.user?.id as string;
     const propertyId = req.params.id as string;
 
-    const result = await updatePropertyService(
-      propertyId,
-      landlordId,
-      req.body,
-    );
+    // Handle file uploads
+    const files = (req.files as Express.Multer.File[]) || [];
+
+    let uploadedUrls: string[] = [];
+    if (files.length > 0) {
+      uploadedUrls = await Promise.all(
+        files.map(async (file) => uploadImageBuffer(file.buffer, file.mimetype)),
+      );
+    }
+
+    // Normalize amenities
+    const payload: any = { ...req.body };
+    if (payload.amenities) {
+      if (typeof payload.amenities === "string") {
+        try {
+          payload.amenities = JSON.parse(payload.amenities);
+        } catch (err) {
+          payload.amenities = String(payload.amenities)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      }
+    }
+
+    // Merge with existing images if any
+    if (uploadedUrls.length > 0) {
+      const existingProperty = await getPropertyByIdService(propertyId);
+      const existingImages = (existingProperty as any).images || [];
+      payload.images = [...existingImages, ...uploadedUrls];
+    }
+
+    const result = await updatePropertyService(propertyId, landlordId, payload);
 
     res.status(200).json({
       success: true,
