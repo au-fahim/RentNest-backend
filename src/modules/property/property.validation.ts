@@ -13,9 +13,10 @@ export const createPropertyZodSchema = z.object({
       .positive("Price must be a positive number"),
     location: z.string({ message: "Location is required" }),
     categoryId: z.string({ message: "Category ID is required" }),
-    amenities: z
-      .array(z.string())
-      .min(1, "Please provide at least one amenity"),
+    amenities: z.union([
+      z.array(z.string()).min(1, "Please provide at least one amenity"),
+      z.string(),
+    ]),
   }),
 });
 
@@ -36,10 +37,36 @@ export const updatePropertyZodSchema = z.object({
     location: z.string().optional(),
     categoryId: z.string().optional(),
     amenities: z
-      .array(z.string())
-      .min(1, "Please provide at least one amenity")
+      .union([
+        z.array(z.string()).min(1, "Please provide at least one amenity"),
+        z.string(),
+      ])
       .optional(),
+    removeImageIds: z
+      .union([
+        z.array(
+          z.string().uuid({ message: "Each image ID must be a valid UUID" }),
+        ),
+        z.string(),
+      ])
+      .optional(),
+    replaceImageIds: z
+      .union([
+        z.array(
+          z.string().uuid({ message: "Each image ID must be a valid UUID" }),
+        ),
+        z.string(),
+      ])
+      .optional(),
+    clearImages: z.coerce.boolean().optional(),
     isAvailable: z.coerce.boolean().optional(),
+  }),
+});
+
+export const deletePropertyImageZodSchema = z.object({
+  params: z.object({
+    id: z.uuid({ message: "Property ID must be a valid UUID" }),
+    imageId: z.uuid({ message: "Image ID must be a valid UUID" }),
   }),
 });
 

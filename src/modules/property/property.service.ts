@@ -43,6 +43,9 @@ export const createPropertyService = async (
   };
 
   if (images) {
+    if (images.length > 6) {
+      throw new AppError(400, "A property can have at most 6 images.");
+    }
     data.images = { create: images };
   }
 
@@ -63,6 +66,7 @@ export const updatePropertyService = async (
 ) => {
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
+    include: { images: true },
   });
 
   if (!property) {
@@ -73,16 +77,77 @@ export const updatePropertyService = async (
     throw new AppError(403, "You can only update your own properties");
   }
 
-  // If payload.images is an array, treat them as new images to create
-  const imagesToCreate =
-    Array.isArray(payload.images) && payload.images.length > 0
-      ? payload.images.map((img: any) => ({
-          url: img.url,
-          publicId: img.publicId,
-        }))
-      : undefined;
+  const clearImages = payload.clearImages === true;
+  const removeImageIds = Array.isArray(payload.removeImageIds)
+    ? payload.removeImageIds.map(String).filter(Boolean)
+    : [];
+  const replaceImageIds = Array.isArray(payload.replaceImageIds)
+    ? payload.replaceImageIds.map(String).filter(Boolean)
+    : [];
+  const replaceImages = Array.isArray(payload.replaceImages)
+    ? payload.replaceImages.map((img: any) => ({
+        url: img.url,
+        publicId: img.publicId,
+      }))
+    : [];
+  const newImages = Array.isArray(payload.newImages)
+    ? payload.newImages.map((img: any) => ({
+        url: img.url,
+        publicId: img.publicId,
+      }))
+    : [];
 
-  // Build the data to update, copying allowed fields
+  if (clearImages && replaceImageIds.length > 0) {
+    throw new AppError(
+      400,
+      "Cannot use replaceImageIds together with clearImages. Clear all images first, then upload new ones.",
+    );
+  }
+
+  if (replaceImageIds.length > replaceImages.length) {
+    throw new AppError(
+      400,
+      "The number of replacement file uploads must match the number of replaceImageIds.",
+    );
+  }
+
+  const existingImages = property.images ?? [];
+  const existingImageIds = new Set(existingImages.map((img: any) => img.id));
+
+  if (removeImageIds.some((id: string) => !existingImageIds.has(id))) {
+    throw new AppError(
+      400,
+      "One or more removeImageIds do not belong to this property.",
+    );
+  }
+
+  if (replaceImageIds.some((id: string) => !existingImageIds.has(id))) {
+    throw new AppError(
+      400,
+      "One or more replaceImageIds do not belong to this property.",
+    );
+  }
+
+  const deletedIds = new Set<string>();
+  if (clearImages) {
+    existingImages.forEach((img: any) => deletedIds.add(img.id));
+  } else {
+    removeImageIds.forEach((id: string) => deletedIds.add(id));
+    replaceImageIds.forEach((id: string) => deletedIds.add(id));
+  }
+
+  const remainingCount = clearImages
+    ? 0
+    : existingImages.length - deletedIds.size;
+  const totalNewImages = replaceImages.length + newImages.length;
+
+  if (remainingCount + totalNewImages > 6) {
+    throw new AppError(
+      400,
+      `Image limit exceeded. A property may have at most 6 images. After this update, it would have ${remainingCount + totalNewImages} images.`,
+    );
+  }
+
   const price = payload.price !== undefined ? Number(payload.price) : undefined;
   const isAvailable =
     payload.isAvailable !== undefined
@@ -116,17 +181,76 @@ export const updatePropertyService = async (
     data.amenities = amenities;
   }
 
-  if (imagesToCreate) {
-    data.images = { create: imagesToCreate };
+  const allNewImages = [...replaceImages, ...newImages];
+  if (allNewImages.length > 0) {
+    data.images = { create: allNewImages };
   }
 
-  return await prisma.property.update({
+  const result = await prisma.$transaction(async (tx) => {
+    if (deletedIds.size > 0) {
+      await tx.propertyImage.deleteMany({
+        where: {
+          id: { in: Array.from(deletedIds) },
+        },
+      });
+    }
+
+    return tx.property.update({
+      where: { id: propertyId },
+      data,
+      include: {
+        category: { select: { id: true, name: true } },
+        images: { select: { id: true, url: true, publicId: true } },
+      },
+    });
+  });
+
+  const imagesToDelete = existingImages.filter((img: any) =>
+    deletedIds.has(img.id),
+  );
+  await Promise.all(
+    imagesToDelete.map((image) => deleteImageByPublicId(image.publicId)),
+  );
+
+  return result;
+};
+
+export const deletePropertyImageService = async (
+  propertyId: string,
+  imageId: string,
+  landlordId: string,
+) => {
+  const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    data,
-    include: {
-      category: { select: { id: true, name: true } },
-      images: { select: { id: true, url: true, publicId: true } },
-    },
+    include: { images: true },
+  });
+
+  if (!property) {
+    throw new AppError(404, "Property not found");
+  }
+
+  if (property.landlordId !== landlordId) {
+    throw new AppError(
+      403,
+      "You can only modify images for your own properties",
+    );
+  }
+
+  const image = property.images.find((img: any) => img.id === imageId);
+
+  if (!image) {
+    throw new AppError(404, "Property image not found");
+  }
+
+  try {
+    await deleteImageByPublicId(image.publicId);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Failed to delete cloud image", image.publicId, err);
+  }
+
+  await prisma.propertyImage.delete({
+    where: { id: imageId },
   });
 };
 

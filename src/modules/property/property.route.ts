@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createPropertyController,
   deletePropertyController,
+  deletePropertyImageController,
   getAllPropertiesController,
   getLandlordPropertiesController,
   getPropertyByIdController,
@@ -10,6 +11,7 @@ import {
 import { validateRequest } from "../../middlewares/validateRequest.js";
 import {
   createPropertyZodSchema,
+  deletePropertyImageZodSchema,
   propertyIdParamZodSchema,
   updatePropertyZodSchema,
 } from "./property.validation.js";
@@ -57,6 +59,14 @@ router.patch(
   upload.array("images", 6),
   validateRequest(updatePropertyZodSchema),
   updatePropertyController,
+);
+
+// Endpoint: DELETE /api/properties/:id/images/:imageId (Protected Route: Landlord Only)
+router.delete(
+  "/:id/images/:imageId",
+  auth("LANDLORD"),
+  validateRequest(deletePropertyImageZodSchema),
+  deletePropertyImageController,
 );
 
 // Endpoint: DELETE /api/properties/:id (Protected Route: Landlord Only)
