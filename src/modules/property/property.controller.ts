@@ -21,15 +21,23 @@ export const createPropertyController = async (
     // Handle file uploads (multer stores files in memory)
     const files = (req.files as Express.Multer.File[]) || [];
 
-    let uploadedUrls: string[] = [];
+    let uploadedResults: { url: string; public_id: string }[] = [];
     if (files.length > 0) {
-      uploadedUrls = await Promise.all(
+      uploadedResults = await Promise.all(
         files.map(async (file) => uploadImageBuffer(file.buffer, file.mimetype)),
       );
     }
 
     // Normalize amenities when coming from multipart/form-data
     const payload: any = { ...req.body };
+
+    if (payload.price !== undefined && payload.price !== "") {
+      payload.price = Number(payload.price);
+    }
+
+    if (payload.isAvailable !== undefined && payload.isAvailable !== "") {
+      payload.isAvailable = String(payload.isAvailable).toLowerCase() === "true";
+    }
 
     if (payload.amenities) {
       if (typeof payload.amenities === "string") {
@@ -44,8 +52,9 @@ export const createPropertyController = async (
       }
     }
 
-    if (uploadedUrls.length > 0) {
-      payload.images = uploadedUrls;
+    if (uploadedResults.length > 0) {
+      // Convert to the shape expected by service: { url, publicId }
+      payload.images = uploadedResults.map((r) => ({ url: r.url, publicId: r.public_id }));
     }
 
     const result = await createPropertyService(landlordId, payload);
@@ -93,15 +102,23 @@ export const updatePropertyController = async (
     // Handle file uploads
     const files = (req.files as Express.Multer.File[]) || [];
 
-    let uploadedUrls: string[] = [];
+    let uploadedResults: { url: string; public_id: string }[] = [];
     if (files.length > 0) {
-      uploadedUrls = await Promise.all(
+      uploadedResults = await Promise.all(
         files.map(async (file) => uploadImageBuffer(file.buffer, file.mimetype)),
       );
     }
 
     // Normalize amenities
     const payload: any = { ...req.body };
+    if (payload.price !== undefined && payload.price !== "") {
+      payload.price = Number(payload.price);
+    }
+
+    if (payload.isAvailable !== undefined && payload.isAvailable !== "") {
+      payload.isAvailable = String(payload.isAvailable).toLowerCase() === "true";
+    }
+
     if (payload.amenities) {
       if (typeof payload.amenities === "string") {
         try {
@@ -115,11 +132,15 @@ export const updatePropertyController = async (
       }
     }
 
-    // Merge with existing images if any
-    if (uploadedUrls.length > 0) {
+    // Merge with existing images if any (only append newly uploaded images)
+    if (uploadedResults.length > 0) {
       const existingProperty = await getPropertyByIdService(propertyId);
       const existingImages = (existingProperty as any).images || [];
-      payload.images = [...existingImages, ...uploadedUrls];
+      // existingImages are objects { url, publicId }
+      const newImages = uploadedResults.map((r) => ({ url: r.url, publicId: r.public_id }));
+      // For update, service expects payload.images as array of objects to create
+      payload.images = newImages;
+      // leave existing images untouched — service will create new ones and return the full property
     }
 
     const result = await updatePropertyService(propertyId, landlordId, payload);

@@ -16,7 +16,19 @@ import {
 import multer from "multer";
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+
+// File filter to accept common image mime types
+const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type. Only JPG, PNG and WEBP are allowed."));
+  }
+};
+
+// Limit file size to 5MB per file and maximum 6 files
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter });
 
 import { auth } from "../../middlewares/auth.js";
 
