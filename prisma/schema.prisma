@@ -78,6 +78,8 @@ model Property {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
 
+  images PropertyImage[]
+
   rentalRequests RentalRequest[]
   reviews        Review[]
 
@@ -85,6 +87,20 @@ model Property {
   updatedAt DateTime @updatedAt
 
   @@map("properties")
+}
+
+
+model PropertyImage {
+  id         String   @id @default(uuid())
+  url        String
+  publicId   String   @map("public_id")
+
+  property   Property @relation(fields: [propertyId], references: [id])
+  propertyId String
+
+  createdAt DateTime @default(now())
+
+  @@map("property_images")
 }
 
 model RentalRequest {
