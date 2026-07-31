@@ -178,6 +178,33 @@ export const updateRentalRequestStatusService = async (
     });
   }
 
+  if (status === "REJECTED") {
+    if (request.status !== "PENDING" && request.status !== "APPROVED") {
+      throw new AppError(
+        400,
+        `This request cannot be rejected after it has become ${request.status.toLowerCase()}`,
+      );
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const updatedRequest = await tx.rentalRequest.update({
+        where: { id: requestId },
+        data: { status: "REJECTED" },
+        include: {
+          property: { select: { id: true, title: true, location: true } },
+          tenant: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      await tx.property.update({
+        where: { id: request.propertyId },
+        data: { isAvailable: true },
+      });
+
+      return updatedRequest;
+    });
+  }
+
   if (request.status !== "PENDING") {
     throw new AppError(
       400,
