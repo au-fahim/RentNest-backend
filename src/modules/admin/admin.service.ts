@@ -56,7 +56,12 @@ export const updateUserStatusService = async (
 
 export const getAllPropertiesAdminService = async () => {
   return await prisma.property.findMany({
-    include: { landlord: { select: { name: true, email: true } } },
+    include: {
+      landlord: { select: { name: true, email: true } },
+      category: { select: { id: true, name: true } },
+      images: { select: { id: true, url: true, publicId: true } },
+    },
+    orderBy: { createdAt: "desc" },
   });
 };
 
@@ -66,5 +71,6 @@ export const getAllRentalsAdminService = async () => {
       property: { select: { title: true } },
       tenant: { select: { name: true, email: true } },
     },
+    orderBy: { createdAt: "desc" },
   });
 };
